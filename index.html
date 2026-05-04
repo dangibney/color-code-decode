@@ -420,7 +420,7 @@
         state.hidden.add(state.triangles[idx].id);
       }
       state.target = syndromeFromTriangleSet(state.hidden);
-      state.optimal = hiddenCount <= 10 ? computeOptimalDistance() : null;
+      state.optimal = hiddenCount <= 6 ? computeOptimalDistance() : null;
       updateProduced();
       render();
     }
