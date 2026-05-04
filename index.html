@@ -7,7 +7,7 @@
   <style>
     :root {
       --bg: #f7f7fb;
-      --panel: #ffffff;
+      --panel: #ffffff;F
       --ink: #1f2937;
       --muted: #6b7280;
       --line: #d1d5db;
@@ -420,7 +420,9 @@
         state.hidden.add(state.triangles[idx].id);
       }
       state.target = syndromeFromTriangleSet(state.hidden);
-      state.optimal = hiddenCount <= 6 ? computeOptimalDistance() : null;
+      state.optimal = (hiddenCount <= 10 && state.n <= 5)
+      ? computeOptimalDistance()
+      : null;
       updateProduced();
       render();
     }
