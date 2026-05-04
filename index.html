@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color-Code Decoding Game</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --panel: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --tri: #e5e7eb;
+      --tri-on: #93c5fd;
+      --red: #ef4444;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --amber: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      display: flex;
+    }
+
+    aside {
+      width: 290px;
+      padding: 22px;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      z-index: 2;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(8px);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    label {
+      display: block;
+      font-weight: 650;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    select, input[type="range"], button {
+      width: 100%;
+    }
+
+    select, button {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: white;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      margin-top: 18px;
+      background: #111827;
+      color: white;
+      border-color: #111827;
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--ink);
+      border-color: var(--line);
+      margin-top: 10px;
+    }
+
+    .statBox {
+      margin-top: 20px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fafafa;
+    }
+
+    .statRow {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .statRow strong { font-size: 15px; }
+
+    .legend {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 14px;
+      font-weight: 750;
+      text-align: center;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status.win {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    #boardWrap {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      padding: 24px;
+    }
+
+    svg {
+      display: block;
+      margin: auto;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.08);
+      touch-action: manipulation;
+    }
+
+    polygon.triangle {
+      fill: var(--tri);
+      stroke: #9ca3af;
+      stroke-width: 1.1;
+      cursor: pointer;
+      transition: fill 120ms ease, opacity 120ms ease;
+    }
+
+    polygon.triangle:hover { opacity: 0.78; }
+    polygon.triangle.on { fill: var(--tri-on); }
+
+    circle.vertex {
+      stroke: #111827;
+      stroke-width: 1;
+    }
+
+    circle.target {
+      fill: none;
+      stroke: var(--red);
+      stroke-width: 4;
+      pointer-events: none;
+    }
+
+    circle.produced {
+      fill: none;
+      stroke: var(--blue);
+      stroke-width: 2.7;
+      stroke-dasharray: 3 3;
+      pointer-events: none;
+    }
+
+    circle.matchMark {
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 5;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <aside>
+    <h1>2D Color-Code Decoder</h1>
+    <div class="subtitle">Click triangles to create a syndrome matching the red target circles.</div>
+
+    <label for="sizeSelect">Grid size</label>
+    <select id="sizeSelect">
+      <option value="4" selected>4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option>
+    </select>
+
+    <label for="hardness">Hardness: <span id="hardnessValue">1</span></label>
+    <input id="hardness" type="range" min="1" max="10" value="1" />
+    <div class="small">Higher hardness creates more random hidden triangles, which usually means more target syndrome vertices.</div>
+
+    <button id="resetBtn">Reset puzzle</button>
+    <button id="clearBtn" class="secondary">Clear my triangles</button>
+
+    <div class="statBox">
+      <div class="statRow"><span>Triangles used</span><strong id="triCount">0</strong></div>
+      <div class="statRow"><span>Target syndrome</span><strong id="targetCount">0</strong></div>
+      <div class="statRow"><span>Produced syndrome</span><strong id="prodCount">0</strong></div>
+      <div class="statRow"><span>Mismatches</span><strong id="mismatchCount">0</strong></div>
+    </div>
+
+    <div id="status" class="status">Not feasible yet</div>
+
+    <div class="legend">
+      <p><span class="dot" style="background:#ef4444"></span>Red rings: target syndrome.</p>
+      <p><span class="dot" style="background:#2563eb"></span>Blue dashed rings: syndrome produced by your chosen triangles.</p>
+      <p><span class="dot" style="background:#93c5fd"></span>Filled triangles: your error set.</p>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div class="subtitle"><strong>Goal:</strong> choose triangles whose mod-2 incidence at vertices exactly equals the red syndrome. A vertex is active when it is touched by an odd number of chosen triangles.</div>
+    </header>
+    <div id="boardWrap">
+      <svg id="board" width="900" height="760" aria-label="color code lattice game board"></svg>
+    </div>
+  </main>
+
+  <script>
+    const svg = document.getElementById('board');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const hardness = document.getElementById('hardness');
+    const hardnessValue = document.getElementById('hardnessValue');
+    const resetBtn = document.getElementById('resetBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const triCount = document.getElementById('triCount');
+    const targetCount = document.getElementById('targetCount');
+    const prodCount = document.getElementById('prodCount');
+    const mismatchCount = document.getElementById('mismatchCount');
+    const statusBox = document.getElementById('status');
+
+    let state = {
+      n: 5,
+      vertices: [],
+      vertexMap: new Map(),
+      triangles: [],
+      chosen: new Set(),
+      target: new Set(),
+      produced: new Set(),
+      hidden: new Set(),
+    };
+
+    function key(i, j) { return `${i},${j}`; }
+
+    function colorForVertex(i, j) {
+      const palette = ['#fca5a5', '#86efac', '#93c5fd'];
+      return palette[((i - j) % 3 + 3) % 3];
+    }
+
+    function makeBoard(n) {
+      const margin = 52;
+      const step = Math.max(44, Math.min(82, 560 / n));
+      const h = step * Math.sqrt(3) / 2;
+      const width = margin * 2 + step * (n + 3);
+      const height = margin * 2 + h * (n + 3);
+      svg.setAttribute('width', width);
+      svg.setAttribute('height', height);
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+      const vertices = [];
+      const vertexMap = new Map();
+
+      for (let j = 0; j <= n; j++) {
+        for (let i = 0; i <= n; i++) {
+          const x = margin + step * (i + 0.5 * j);
+          const y = margin + h * j;
+          const id = key(i, j);
+          const v = { id, i, j, x, y, color: colorForVertex(i, j) };
+          vertices.push(v);
+          vertexMap.set(id, v);
+        }
+      }
+
+      const triangles = [];
+      let tid = 0;
+      for (let j = 0; j < n; j++) {
+        for (let i = 0; i < n; i++) {
+          const a = key(i, j);
+          const b = key(i + 1, j);
+          const c = key(i, j + 1);
+          const d = key(i + 1, j + 1);
+          triangles.push({ id: `t${tid++}`, verts: [a, b, c] });
+          triangles.push({ id: `t${tid++}`, verts: [b, d, c] });
+        }
+      }
+
+      state.vertices = vertices;
+      state.vertexMap = vertexMap;
+      state.triangles = triangles;
+      state.chosen.clear();
+      state.produced.clear();
+      state.target.clear();
+      state.hidden.clear();
+    }
+
+    function syndromeFromTriangleSet(triSet) {
+      const syn = new Set();
+      for (const tid of triSet) {
+        const tri = state.triangles.find(t => t.id === tid);
+        for (const v of tri.verts) {
+          if (syn.has(v)) syn.delete(v);
+          else syn.add(v);
+        }
+      }
+      return syn;
+    }
+
+    function randomPuzzle() {
+      state.chosen.clear();
+      state.hidden.clear();
+      const n = state.n;
+      const h = Number(hardness.value);
+      const hiddenCount = Math.min(state.triangles.length, Math.max(1, Math.round(h * n / 2)));
+      while (state.hidden.size < hiddenCount) {
+        const idx = Math.floor(Math.random() * state.triangles.length);
+        state.hidden.add(state.triangles[idx].id);
+      }
+      state.target = syndromeFromTriangleSet(state.hidden);
+      updateProduced();
+      render();
+    }
+
+    function updateProduced() {
+      state.produced = syndromeFromTriangleSet(state.chosen);
+    }
+
+    function symmetricMismatch() {
+      let count = 0;
+      for (const v of state.target) if (!state.produced.has(v)) count++;
+      for (const v of state.produced) if (!state.target.has(v)) count++;
+      return count;
+    }
+
+    function clearSvg() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+    }
+
+    function polygonPoints(tri) {
+      return tri.verts.map(id => {
+        const v = state.vertexMap.get(id);
+        return `${v.x},${v.y}`;
+      }).join(' ');
+    }
+
+    function addCircle(v, r, cls) {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', v.x);
+      c.setAttribute('cy', v.y);
+      c.setAttribute('r', r);
+      c.setAttribute('class', cls);
+      svg.appendChild(c);
+    }
+
+    function render() {
+      clearSvg();
+
+      for (const tri of state.triangles) {
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        p.setAttribute('points', polygonPoints(tri));
+        p.setAttribute('class', `triangle ${state.chosen.has(tri.id) ? 'on' : ''}`);
+        p.addEventListener('click', () => {
+          if (state.chosen.has(tri.id)) state.chosen.delete(tri.id);
+          else state.chosen.add(tri.id);
+          updateProduced();
+          render();
+        });
+        svg.appendChild(p);
+      }
+
+      for (const v of state.vertices) {
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', v.x);
+        c.setAttribute('cy', v.y);
+        c.setAttribute('r', 5.7);
+        c.setAttribute('fill', v.color);
+        c.setAttribute('class', 'vertex');
+        svg.appendChild(c);
+      }
+
+      for (const id of state.target) {
+        const v = state.vertexMap.get(id);
+        addCircle(v, 12, 'target');
+      }
+
+      for (const id of state.produced) {
+        const v = state.vertexMap.get(id);
+        addCircle(v, 17, 'produced');
+      }
+
+      for (const id of state.target) {
+        if (state.produced.has(id)) {
+          const v = state.vertexMap.get(id);
+          addCircle(v, 21, 'matchMark');
+        }
+      }
+
+      updateStats();
+    }
+
+    function updateStats() {
+      const mismatches = symmetricMismatch();
+      triCount.textContent = state.chosen.size;
+      targetCount.textContent = state.target.size;
+      prodCount.textContent = state.produced.size;
+      mismatchCount.textContent = mismatches;
+      if (mismatches === 0) {
+        statusBox.textContent = 'Feasible error found!';
+        statusBox.classList.add('win');
+      } else {
+        statusBox.textContent = 'Not feasible yet';
+        statusBox.classList.remove('win');
+      }
+    }
+
+    function resetAll() {
+      state.n = Number(sizeSelect.value);
+      makeBoard(state.n);
+      randomPuzzle();
+    }
+
+    sizeSelect.addEventListener('change', resetAll);
+    hardness.addEventListener('input', () => {
+      hardnessValue.textContent = hardness.value;
+    });
+    hardness.addEventListener('change', randomPuzzle);
+    resetBtn.addEventListener('click', randomPuzzle);
+    clearBtn.addEventListener('click', () => {
+      state.chosen.clear();
+      updateProduced();
+      render();
+    });
+
+    hardnessValue.textContent = hardness.value;
+    resetAll();
+  </script>
+</body>
+</html>
