@@ -154,12 +154,15 @@
       flex: 1;
       position: relative;
       overflow: auto;
-      padding: 24px;
+      padding: 10px;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
     }
 
     svg {
       display: block;
-      margin: auto;
+      margin: 0 auto;
       background: white;
       border: 1px solid var(--line);
       border-radius: 22px;
@@ -237,6 +240,7 @@
 
     <div class="statBox">
       <div class="statRow"><span>Triangles used</span><strong id="triCount">0</strong></div>
+      <div class="statRow"><span>Optimal target</span><strong id="optimalCount">?</strong></div>
       <div class="statRow"><span>Target syndrome</span><strong id="targetCount">0</strong></div>
       <div class="statRow"><span>Produced syndrome</span><strong id="prodCount">0</strong></div>
       <div class="statRow"><span>Mismatches</span><strong id="mismatchCount">0</strong></div>
@@ -272,6 +276,7 @@
     const prodCount = document.getElementById('prodCount');
     const mismatchCount = document.getElementById('mismatchCount');
     const statusBox = document.getElementById('status');
+    const optimalCount = document.getElementById('optimalCount');
 
     let state = {
       n: 5,
@@ -282,6 +287,7 @@
       target: new Set(),
       produced: new Set(),
       hidden: new Set(),
+      optimal: null,
     };
 
     function key(i, j) { return `${i},${j}`; }
@@ -295,8 +301,8 @@
       const margin = 52;
       const step = Math.max(44, Math.min(82, 560 / n));
       const h = step * Math.sqrt(3) / 2;
-      const width = margin * 2 + step * (n + 3);
-      const height = margin * 2 + h * (n + 3);
+      const width = Math.max(window.innerWidth - 380, margin * 2 + step * (n + 2.5));
+      const height = Math.max(window.innerHeight - 120, margin * 2 + h * (n + 2.2));
       svg.setAttribute('width', width);
       svg.setAttribute('height', height);
       svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
@@ -349,6 +355,60 @@
       return syn;
     }
 
+    function triangleMask(tri) {
+      let mask = 0n;
+      for (const id of tri.verts) {
+        const idx = state.vertices.findIndex(v => v.id === id);
+        mask ^= (1n << BigInt(idx));
+      }
+      return mask;
+    }
+
+    function syndromeMask(synSet) {
+      let mask = 0n;
+      for (const id of synSet) {
+        const idx = state.vertices.findIndex(v => v.id === id);
+        mask ^= (1n << BigInt(idx));
+      }
+      return mask;
+    }
+
+    function computeOptimalDistance() {
+      const targetMask = syndromeMask(state.target);
+      if (targetMask === 0n) return 0;
+
+      const triMasks = state.triangles.map(triangleMask);
+
+      let frontier = new Set([0n]);
+      const seen = new Set(['0']);
+
+      const upperBound = state.hidden.size;
+
+      for (let depth = 1; depth <= upperBound; depth++) {
+        const next = new Set();
+
+        for (const mask of frontier) {
+          for (const tm of triMasks) {
+            const nm = mask ^ tm;
+
+            if (nm === targetMask) {
+              return depth;
+            }
+
+            const key = nm.toString();
+            if (!seen.has(key)) {
+              seen.add(key);
+              next.add(nm);
+            }
+          }
+        }
+
+        frontier = next;
+      }
+
+      return upperBound;
+    }
+
     function randomPuzzle() {
       state.chosen.clear();
       state.hidden.clear();
@@ -360,6 +420,7 @@
         state.hidden.add(state.triangles[idx].id);
       }
       state.target = syndromeFromTriangleSet(state.hidden);
+      state.optimal = computeOptimalDistance();
       updateProduced();
       render();
     }
@@ -447,6 +508,7 @@
       targetCount.textContent = state.target.size;
       prodCount.textContent = state.produced.size;
       mismatchCount.textContent = mismatches;
+      optimalCount.textContent = state.optimal ?? '?';
       if (mismatches === 0) {
         statusBox.textContent = 'Feasible error found!';
         statusBox.classList.add('win');
