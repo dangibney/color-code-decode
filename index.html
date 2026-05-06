@@ -1,564 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Color-Code Decoding Game</title>
-  <style>
-    :root {
-      --bg: #f7f7fb;
-      --panel: #ffffff;
-      --ink: #1f2937;
-      --muted: #6b7280;
-      --line: #d1d5db;
-      --tri: #e5e7eb;
-      --tri-on: #93c5fd;
-      --tri-mark: #fde047;
-      --red: #ef4444;
-      --blue: #2563eb;
-      --green: #16a34a;
-      --amber: #f59e0b;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Color-Code Decoding Game</title>
 
-    * { box-sizing: border-box; }
+<style>
+:root {
+  --bg: #f7f7fb;
+  --panel: #ffffff;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --line: #d1d5db;
+  --tri: #e5e7eb;
+  --tri-on: #93c5fd;
+  --tri-mark: #fde047;
+  --red: #ef4444;
+  --blue: #2563eb;
+  --green: #16a34a;
+}
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--ink);
-      background: var(--bg);
-      display: flex;
-    }
+body {
+  margin: 0;
+  display: flex;
+  font-family: system-ui;
+  background: var(--bg);
+}
 
-    aside {
-      width: 290px;
-      padding: 22px;
-      background: var(--panel);
-      border-right: 1px solid var(--line);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-      z-index: 2;
-    }
+aside {
+  width: 280px;
+  padding: 20px;
+  background: white;
+  border-right: 1px solid var(--line);
+}
 
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
+main { flex: 1; }
 
-    header {
-      padding: 16px 22px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255,255,255,0.72);
-      backdrop-filter: blur(8px);
-    }
+svg {
+  display: block;
+  margin: 10px auto;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
 
-    h1 {
-      margin: 0 0 6px;
-      font-size: 22px;
-      line-height: 1.2;
-    }
+polygon.triangle {
+  fill: var(--tri);
+  stroke: #9ca3af;
+  cursor: pointer;
+}
 
-    .subtitle {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.45;
-    }
+/* yellow mark */
+polygon.triangle.marked {
+  fill: var(--tri-mark);
+}
 
-    label {
-      display: block;
-      font-weight: 650;
-      margin-top: 18px;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
+/* blue ON should override yellow */
+polygon.triangle.on {
+  fill: var(--tri-on);
+}
 
-    select, input[type="range"], button {
-      width: 100%;
-    }
+circle.target { stroke: var(--red); fill: none; stroke-width: 3; }
+circle.produced { stroke: var(--blue); fill: none; stroke-dasharray: 3 3; }
 
-    select, button {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: white;
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-      font-weight: 700;
-      margin-top: 18px;
-      background: #111827;
-      color: white;
-      border-color: #111827;
-    }
-
-    button.secondary {
-      background: white;
-      color: var(--ink);
-      border-color: var(--line);
-      margin-top: 10px;
-    }
-
-    .statBox {
-      margin-top: 20px;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: #fafafa;
-    }
-
-    .statRow {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 8px 0;
-      font-size: 14px;
-    }
-
-    .statRow strong { font-size: 15px; }
-
-    .legend {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .dot {
-      display: inline-block;
-      width: 11px;
-      height: 11px;
-      border-radius: 999px;
-      margin-right: 6px;
-      vertical-align: -1px;
-    }
-
-    .status {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 14px;
-      font-weight: 750;
-      text-align: center;
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .status.win {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    #boardWrap {
-      flex: 1;
-      position: relative;
-      overflow: auto;
-      padding: 10px;
-      display: flex;
-      align-items: stretch;
-      justify-content: stretch;
-    }
-
-    svg {
-      display: block;
-      margin: 0 auto;
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      box-shadow: 0 12px 36px rgba(0,0,0,0.08);
-      touch-action: manipulation;
-    }
-
-    polygon.triangle {
-      fill: var(--tri);
-      stroke: #9ca3af;
-      stroke-width: 1.1;
-      cursor: pointer;
-      transition: fill 120ms ease, opacity 120ms ease;
-    }
-
-    polygon.triangle:hover { opacity: 0.78; }
-    polygon.triangle.on { fill: var(--tri-on); }
-    polygon.triangle.marked { fill: var(--tri-mark); }
-
-    circle.vertex {
-      stroke: #111827;
-      stroke-width: 1;
-    }
-
-    circle.target {
-      fill: none;
-      stroke: var(--red);
-      stroke-width: 4;
-      pointer-events: none;
-    }
-
-    circle.produced {
-      fill: none;
-      stroke: var(--blue);
-      stroke-width: 2.7;
-      stroke-dasharray: 3 3;
-      pointer-events: none;
-    }
-
-    circle.matchMark {
-      fill: none;
-      stroke: var(--green);
-      stroke-width: 5;
-      opacity: 0.35;
-      pointer-events: none;
-    }
-
-    .small {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 6px;
-    }
-  </style>
+</style>
 </head>
+
 <body>
-  <aside>
-    <h1>2D Color-Code Decoder</h1>
-    <div class="subtitle">Click triangles to create a syndrome matching the red target circles.</div>
 
-    <label for="sizeSelect">Grid size</label>
-    <select id="sizeSelect">
-      <option value="4" selected>4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-      <option value="11">11</option>
-      <option value="12">12</option>
-      <option value="13">13</option>
-      <option value="14">14</option>
-      <option value="15">15</option>
-    </select>
+<aside>
+<h2>Decoder</h2>
 
-    <label for="hardness">Hardness: <span id="hardnessValue">1</span></label>
-    <input id="hardness" type="range" min="1" max="10" value="1" />
-    <div class="small">Higher hardness creates more random hidden triangles, which usually means more target syndrome vertices.</div>
+<label>Grid size</label>
+<select id="sizeSelect">
+<option value="4">4</option>
+<option value="5">5</option>
+<option value="6">6</option>
+<option value="7">7</option>
+<option value="8">8</option>
+<option value="9">9</option>
+<option value="10">10</option>
+<option value="11">11</option>
+<option value="12">12</option>
+<option value="13">13</option>
+<option value="14">14</option>
+<option value="15">15</option>
+</select>
 
-    <button id="resetBtn">Reset puzzle</button>
-    <button id="clearBtn" class="secondary">Clear my triangles</button>
+<button id="resetBtn">Reset</button>
 
-    <div class="statBox">
-      <div class="statRow"><span>Triangles used</span><strong id="triCount">0</strong></div>
-      <div class="statRow"><span>Optimal target</span><strong id="optimalCount">?</strong></div>
-      <div class="statRow"><span>Target syndrome</span><strong id="targetCount">0</strong></div>
-      <div class="statRow"><span>Produced syndrome</span><strong id="prodCount">0</strong></div>
-      <div class="statRow"><span>Mismatches</span><strong id="mismatchCount">0</strong></div>
-    </div>
+</aside>
 
-    <div id="status" class="status">Not feasible yet</div>
+<main>
+<svg id="board"></svg>
+</main>
 
-    <div class="legend">
-      <p><span class="dot" style="background:#ef4444"></span>Red rings: target syndrome.</p>
-      <p><span class="dot" style="background:#2563eb"></span>Blue dashed rings: syndrome produced by your chosen triangles.</p>
-      <p><span class="dot" style="background:#93c5fd"></span>Filled triangles: your error set.</p>
-      <p><span class="dot" style="background:#fde047"></span>Yellow triangles: right-click marks only.</p>
-    </div>
-  </aside>
+<script>
+const svg = document.getElementById("board");
+const sizeSelect = document.getElementById("sizeSelect");
 
-  <main>
-    <header>
-      <div class="subtitle"><strong>Goal:</strong> choose triangles whose mod-2 incidence at vertices exactly equals the red syndrome. A vertex is active when it is touched by an odd number of chosen triangles.</div>
-    </header>
-    <div id="boardWrap">
-      <svg id="board" width="900" height="760" aria-label="color code lattice game board"></svg>
-    </div>
-  </main>
+let state = {
+  n: 6,
+  vertices: [],
+  triangles: [],
+  chosen: new Set(),
+  marked: new Set(),
+  target: new Set(),
+  produced: new Set()
+};
 
-  <script>
-    const svg = document.getElementById('board');
-    const sizeSelect = document.getElementById('sizeSelect');
-    const hardness = document.getElementById('hardness');
-    const hardnessValue = document.getElementById('hardnessValue');
-    const resetBtn = document.getElementById('resetBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const triCount = document.getElementById('triCount');
-    const targetCount = document.getElementById('targetCount');
-    const prodCount = document.getElementById('prodCount');
-    const mismatchCount = document.getElementById('mismatchCount');
-    const statusBox = document.getElementById('status');
-    const optimalCount = document.getElementById('optimalCount');
+function key(i,j){ return i+","+j; }
 
-    let state = {
-      n: 5,
-      vertices: [],
-      vertexMap: new Map(),
-      triangles: [],
-      chosen: new Set(),
-      marked: new Set(),
-      target: new Set(),
-      produced: new Set(),
-      hidden: new Set(),
-      optimal: null,
+function makeBoard(n){
+  const step = Math.max(28, Math.min(80, 600/n));
+  const h = step * Math.sqrt(3)/2;
+
+  svg.setAttribute("width", 800);
+  svg.setAttribute("height", 700);
+
+  let verts = [];
+  let map = new Map();
+
+  for(let j=0;j<=n;j++){
+    for(let i=0;i<=n;i++){
+      const x = 40 + step*(i + j*0.5);
+      const y = 40 + h*j;
+      const id = key(i,j);
+      const v = {id,x,y};
+      verts.push(v);
+      map.set(id,v);
+    }
+  }
+
+  let tris=[];
+  let t=0;
+  for(let j=0;j<n;j++){
+    for(let i=0;i<n;i++){
+      const a=key(i,j), b=key(i+1,j), c=key(i,j+1), d=key(i+1,j+1);
+      tris.push({id:"t"+t++, verts:[a,b,c]});
+      tris.push({id:"t"+t++, verts:[b,d,c]});
+    }
+  }
+
+  state.vertices=verts;
+  state.vertexMap=map;
+  state.triangles=tris;
+  state.chosen.clear();
+  state.marked.clear();
+}
+
+function poly(tri){
+  return tri.verts.map(id=>{
+    let v=state.vertexMap.get(id);
+    return v.x+","+v.y;
+  }).join(" ");
+}
+
+function syndrome(set){
+  let s=new Set();
+  for(let tid of set){
+    let tri=state.triangles.find(t=>t.id===tid);
+    for(let v of tri.verts){
+      if(s.has(v)) s.delete(v); else s.add(v);
+    }
+  }
+  return s;
+}
+
+function render(){
+  svg.innerHTML="";
+
+  for(let tri of state.triangles){
+    let p=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    p.setAttribute("points",poly(tri));
+
+    let cls="triangle";
+    if(state.marked.has(tri.id)) cls+=" marked";
+    if(state.chosen.has(tri.id)) cls+=" on"; // applied last → blue wins
+    p.setAttribute("class",cls);
+
+    p.onclick=()=>{
+      if(state.chosen.has(tri.id)) state.chosen.delete(tri.id);
+      else state.chosen.add(tri.id);
+      state.produced=syndrome(state.chosen);
+      render();
     };
 
-    function key(i, j) { return `${i},${j}`; }
-
-    function colorForVertex(i, j) {
-      const palette = ['#fca5a5', '#86efac', '#93c5fd'];
-      return palette[((i - j) % 3 + 3) % 3];
-    }
-
-    function makeBoard(n) {
-      const margin = 52;
-      const step = Math.max(28, Math.min(82, 560 / n));
-      const h = step * Math.sqrt(3) / 2;
-      const width = Math.max(window.innerWidth - 380, margin * 2 + step * (n + 2.5));
-      const height = Math.max(window.innerHeight - 120, margin * 2 + h * (n + 2.2));
-      svg.setAttribute('width', width);
-      svg.setAttribute('height', height);
-      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-
-      const vertices = [];
-      const vertexMap = new Map();
-
-      for (let j = 0; j <= n; j++) {
-        for (let i = 0; i <= n; i++) {
-          const x = margin + step * (i + 0.5 * j);
-          const y = margin + h * j;
-          const id = key(i, j);
-          const v = { id, i, j, x, y, color: colorForVertex(i, j) };
-          vertices.push(v);
-          vertexMap.set(id, v);
-        }
-      }
-
-      const triangles = [];
-      let tid = 0;
-      for (let j = 0; j < n; j++) {
-        for (let i = 0; i < n; i++) {
-          const a = key(i, j);
-          const b = key(i + 1, j);
-          const c = key(i, j + 1);
-          const d = key(i + 1, j + 1);
-          triangles.push({ id: `t${tid++}`, verts: [a, b, c] });
-          triangles.push({ id: `t${tid++}`, verts: [b, d, c] });
-        }
-      }
-
-      state.vertices = vertices;
-      state.vertexMap = vertexMap;
-      state.triangles = triangles;
-      state.chosen.clear();
-      state.marked.clear();
-      state.produced.clear();
-      state.target.clear();
-      state.hidden.clear();
-    }
-
-    function syndromeFromTriangleSet(triSet) {
-      const syn = new Set();
-      for (const tid of triSet) {
-        const tri = state.triangles.find(t => t.id === tid);
-        if (!tri) continue;
-        for (const v of tri.verts) {
-          if (syn.has(v)) syn.delete(v);
-          else syn.add(v);
-        }
-      }
-      return syn;
-    }
-
-    function triangleMask(tri) {
-      let mask = 0n;
-      for (const id of tri.verts) {
-        const idx = state.vertices.findIndex(v => v.id === id);
-        mask ^= (1n << BigInt(idx));
-      }
-      return mask;
-    }
-
-    function syndromeMask(synSet) {
-      let mask = 0n;
-      for (const id of synSet) {
-        const idx = state.vertices.findIndex(v => v.id === id);
-        mask ^= (1n << BigInt(idx));
-      }
-      return mask;
-    }
-
-    function computeOptimalDistance() {
-      const targetMask = syndromeMask(state.target);
-      if (targetMask === 0n) return 0;
-
-      const triMasks = state.triangles.map(triangleMask);
-
-      let frontier = new Set([0n]);
-      const seen = new Set(['0']);
-
-      const upperBound = state.hidden.size;
-
-      for (let depth = 1; depth <= upperBound; depth++) {
-        const next = new Set();
-
-        for (const mask of frontier) {
-          for (const tm of triMasks) {
-            const nm = mask ^ tm;
-
-            if (nm === targetMask) {
-              return depth;
-            }
-
-            const maskKey = nm.toString();
-            if (!seen.has(maskKey)) {
-              seen.add(maskKey);
-              next.add(nm);
-            }
-          }
-        }
-
-        frontier = next;
-      }
-
-      return upperBound;
-    }
-
-    function randomPuzzle() {
-      state.chosen.clear();
-      state.marked.clear();
-      state.hidden.clear();
-      const n = state.n;
-      const h = Number(hardness.value);
-      const hiddenCount = Math.min(state.triangles.length, Math.max(1, Math.round(h * n / 2)));
-      while (state.hidden.size < hiddenCount) {
-        const idx = Math.floor(Math.random() * state.triangles.length);
-        state.hidden.add(state.triangles[idx].id);
-      }
-      state.target = syndromeFromTriangleSet(state.hidden);
-      state.optimal = (hiddenCount <= 6 && state.n <= 4)
-      ? computeOptimalDistance()
-      : null;
-      updateProduced();
+    p.oncontextmenu=(e)=>{
+      e.preventDefault();
+      if(state.marked.has(tri.id)) state.marked.delete(tri.id);
+      else state.marked.add(tri.id);
       render();
-    }
+    };
 
-    function updateProduced() {
-      state.produced = syndromeFromTriangleSet(state.chosen);
-    }
+    svg.appendChild(p);
+  }
 
-    function symmetricMismatch() {
-      let count = 0;
-      for (const v of state.target) if (!state.produced.has(v)) count++;
-      for (const v of state.produced) if (!state.target.has(v)) count++;
-      return count;
-    }
+  for(let v of state.target){
+    let vv=state.vertexMap.get(v);
+    let c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",vv.x);
+    c.setAttribute("cy",vv.y);
+    c.setAttribute("r",10);
+    c.setAttribute("class","target");
+    svg.appendChild(c);
+  }
 
-    function clearSvg() {
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-    }
+  for(let v of state.produced){
+    let vv=state.vertexMap.get(v);
+    let c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",vv.x);
+    c.setAttribute("cy",vv.y);
+    c.setAttribute("r",14);
+    c.setAttribute("class","produced");
+    svg.appendChild(c);
+  }
+}
 
-    function polygonPoints(tri) {
-      return tri.verts.map(id => {
-        const v = state.vertexMap.get(id);
-        return `${v.x},${v.y}`;
-      }).join(' ');
-    }
+function random(){
+  state.chosen.clear();
+  state.marked.clear();
 
-    function addCircle(v, r, cls) {
-      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      c.setAttribute('cx', v.x);
-      c.setAttribute('cy', v.y);
-      c.setAttribute('r', r);
-      c.setAttribute('class', cls);
-      svg.appendChild(c);
-    }
+  let hidden=new Set();
+  let k=Math.floor(state.n*2);
+  while(hidden.size<k){
+    let t=state.triangles[Math.floor(Math.random()*state.triangles.length)];
+    hidden.add(t.id);
+  }
 
-    function render() {
-      clearSvg();
+  state.target=syndrome(hidden);
+  state.produced=new Set();
+  render();
+}
 
-      for (const tri of state.triangles) {
-        const p = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        p.setAttribute('points', polygonPoints(tri));
-        p.setAttribute('class', `triangle ${state.chosen.has(tri.id) ? 'on' : ''} ${state.marked.has(tri.id) ? 'marked' : ''}`);
-        p.addEventListener('click', () => {
-          if (state.chosen.has(tri.id)) state.chosen.delete(tri.id);
-          else state.chosen.add(tri.id);
-          updateProduced();
-          render();
-        });
-        p.addEventListener('contextmenu', (event) => {
-          event.preventDefault();
-          if (state.marked.has(tri.id)) state.marked.delete(tri.id);
-          else state.marked.add(tri.id);
-          render();
-        });
-        svg.appendChild(p);
-      }
+function reset(){
+  state.n=Number(sizeSelect.value);
+  makeBoard(state.n);
+  random();
+}
 
-      for (const v of state.vertices) {
-        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        c.setAttribute('cx', v.x);
-        c.setAttribute('cy', v.y);
-        c.setAttribute('r', 5.7);
-        c.setAttribute('fill', v.color);
-        c.setAttribute('class', 'vertex');
-        svg.appendChild(c);
-      }
+document.getElementById("resetBtn").onclick=random;
+sizeSelect.onchange=reset;
 
-      for (const id of state.target) {
-        const v = state.vertexMap.get(id);
-        addCircle(v, 12, 'target');
-      }
+reset();
+</script>
 
-      for (const id of state.produced) {
-        const v = state.vertexMap.get(id);
-        addCircle(v, 17, 'produced');
-      }
-
-      for (const id of state.target) {
-        if (state.produced.has(id)) {
-          const v = state.vertexMap.get(id);
-          addCircle(v, 21, 'matchMark');
-        }
-      }
-
-      updateStats();
-    }
-
-    function updateStats() {
-      const mismatches = symmetricMismatch();
-      triCount.textContent = state.chosen.size;
-      targetCount.textContent = state.target.size;
-      prodCount.textContent = state.produced.size;
-      mismatchCount.textContent = mismatches;
-      optimalCount.textContent = state.optimal ?? '??';
-      if (mismatches === 0) {
-        statusBox.textContent = 'Feasible error found!';
-        statusBox.classList.add('win');
-      } else {
-        statusBox.textContent = 'Not feasible yet';
-        statusBox.classList.remove('win');
-      }
-    }
-
-    function resetAll() {
-      state.n = Number(sizeSelect.value);
-      makeBoard(state.n);
-      randomPuzzle();
-    }
-
-    sizeSelect.addEventListener('change', resetAll);
-    hardness.addEventListener('input', () => {
-      hardnessValue.textContent = hardness.value;
-    });
-    hardness.addEventListener('change', randomPuzzle);
-    resetBtn.addEventListener('click', randomPuzzle);
-    clearBtn.addEventListener('click', () => {
-      state.chosen.clear();
-      updateProduced();
-      render();
-    });
-
-    hardnessValue.textContent = hardness.value;
-    resetAll();
-  </script>
 </body>
 </html>
